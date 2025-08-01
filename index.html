@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IT Admin Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --light: #f8fafc;
+      --dark: #1e293b;
+      --sidebar: #0f172a;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body, html { height: 100%; }
+    body { background: #f1f5f9; color: var(--text-primary); line-height: 1.5; }
+    #loginPage {
+      height: 100%; display: flex; justify-content: center; align-items: center;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+    #loginBox {
+      background: var(--card-bg); padding: 2rem; border-radius: 0.5rem;
+      width: 100%; max-width: 400px; box-shadow: var(--shadow-md); animation: fadeInUp 0.6s ease;
+    }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    #loginBox h2 { text-align: center; margin-bottom: 1.5rem; color: var(--primary); font-weight: 600; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+    .form-input {
+      width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--card-border);
+      border-radius: 0.375rem; font-size: 0.875rem; transition: var(--transition);
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; font-weight: 500;
+      padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-size: 0.875rem;
+      transition: var(--transition); cursor: pointer; border: none;
+    }
+    .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background-color: var(--primary-dark); }
+    .btn-logout { background-color: var(--danger); color: white; position: absolute; top: 1.5rem; right: 1.5rem; }
+    .btn-logout:hover { background-color: #b91c1c; }
+    .btn-reset { background-color: var(--warning); color: white; position: absolute; top: 1.5rem; right: 7rem; }
+    .btn-reset:hover { background-color: #b86004; }
+    .btn-export { background-color: #6b7280; color: white; width: 100%; }
+    .btn-export:hover { background-color: #4b5563; }
+    #dashboard { display: none; height: 100vh; overflow: hidden; position: relative; display: flex; }
+    aside {
+      width: 240px; background: var(--sidebar); color: white; display: flex; flex-direction: column;
+    }
+    .sidebar-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    .sidebar-header h3 { font-size: 1.125rem; font-weight: 600; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 1rem 0; }
+    .menu-item {
+      display: flex; align-items: center; padding: 0.75rem 1.5rem; color: rgba(255, 255, 255, 0.8);
+      text-decoration: none; transition: var(--transition); font-size: 0.875rem; cursor: pointer;
+    }
+    .menu-item:hover { color: white; background: rgba(255, 255, 255, 0.1); }
+    .menu-item.active { color: white; background: rgba(255, 255, 255, 0.1); }
+    .menu-item i { margin-right: 0.75rem; width: 1.25rem; text-align: center; }
+    .dropdown { list-style: none; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(0, 0, 0, 0.1); }
+    .dropdown.show { max-height: 500px; }
+    .dropdown .menu-item { padding-left: 3rem; padding-top: 0.625rem; padding-bottom: 0.625rem; }
+    .dropdown-toggle::after {
+      content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+      position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);
+      font-size: 0.75rem; transition: var(--transition);
+    }
+    .dropdown-toggle.collapsed::after { transform: translateY(-50%) rotate(-90deg); }
+    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .content-header { padding: 1.5rem; background: white; border-bottom: 1px solid var(--card-border); position: relative; }
+    .content-header h2 { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; }
+    .content-body { flex: 1; padding: 1.5rem; }
+    .card {
+      background: var(--card-bg); border-radius: 0.5rem; box-shadow: var(--shadow);
+      margin-bottom: 1.5rem; border: 1px solid var(--card-border); transition: var(--transition);
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--card-border); }
+    .card-header h3 { font-size: 1.125rem; font-weight: 600; }
+    .card-body { padding: 1.5rem; }
+    .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .table th { background: #f8fafc; padding: 0.75rem 1rem; text-align: left; font-weight: 500; color: var(--text-secondary); border-bottom: 1px solid var(--card-border); }
+    .table td { padding: 1rem; border-bottom: 1px solid var(--card-border); vertical-align: middle; }
+    .table tr:last-child td { border-bottom: none; }
+    .table tr:hover { background: #f8fafc; }
+    .badge { display: inline-block; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 500; border-radius: 0.25rem; }
+    .badge-primary { background: #dbeafe; color: var(--primary); }
+    .badge-success { background: #d1fae5; color: var(--secondary); }
+    .badge-warning { background: #fef3c7; color: var(--warning); }
+    .badge-danger { background: #fee2e2; color: var(--danger); }
+    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+    .btn-group { display: flex; gap: 0.5rem; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem; }
+    .calendar-container { margin-bottom: 1.5rem; }
+    .flatpickr-calendar { width: 100%; max-width: 600px; margin: 0 auto; }
+    .attendance-circle { position: relative; text-align: center; margin: 0 auto; }
+    @media (max-width: 992px) {
+      aside { transform: translateX(-100%); position: fixed; height: 100%; z-index: 20; }
+      aside.show { transform: translateX(0); }
+      main { margin-left: 0; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div id="loginPage">
+  <div id="loginBox">
+    <h2><i class="fas fa-user-shield mr-2"></i> Admin Login</h2>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-input" id="username" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" class="form-input" id="password" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary" onclick="login()">
+      <i class="fas fa-sign-in-alt mr-2"></i> Login
+    </button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <aside>
+    <div class="sidebar-header">
+      <h3><i class="fas fa-user-shield mr-2"></i> IT Admin Panel</h3>
+    </div>
+    <div class="sidebar-nav">
+      <div class="menu-item active" onclick="showSection('dashboardHome')">
+        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+      </div>
+      <div class="menu-item dropdown-toggle" onclick="toggleDropdown('user')">
+        <i class="fas fa-users"></i> <span>User Management</span>
+      </div>
+      <div class="dropdown" id="userDropdown">
+        <div class="menu-item" onclick="showSection('createUser')">
+          <i class="fas fa-user-plus"></i> <span>Create User</span>
+        </div>
+        <div class="menu-item" onclick="showSection('manageUser')">
+          <i class="fas fa-user-cog"></i> <span>Manage Users</span>
+        </div>
+      </div>
+      <div class="menu-item dropdown-toggle" onclick="toggleDropdown('assist')">
+        <i class="fas fa-laptop-medical"></i> <span>Assist Stock</span>
+      </div>
+      <div class="dropdown" id="assistDropdown">
+        <div class="menu-item" onclick="showSection('addAssist')">
+          <i class="fas fa-plus-circle"></i> <span>Add Assist</span>
+        </div>
+        <div class="menu-item" onclick="showSection('manageAssist')">
+          <i class="fas fa-tools"></i> <span>Manage Assist</span>
+        </div>
+      </div>
+      <div class="menu-item dropdown-toggle" onclick="toggleDropdown('inventory')">
+        <i class="fas fa-boxes"></i> <span>IT Inventory</span>
+      </div>
+      <div class="dropdown" id="inventoryDropdown">
+        <div class="menu-item" onclick="showSection('viewInventory')">
+          <i class="fas fa-list"></i> <span>View Inventory</span>
+        </div>
+        <div class="menu-item" onclick="showSection('assignStock')">
+          <i class="fas fa-handshake"></i> <span>Assign Stock</span>
+        </div>
+        <div class="menu-item" onclick="showSection('searchAssignStock')">
+          <i class="fas fa-search"></i> <span>Search Assign Stock</span>
+        </div>
+      </div>
+      <div class="menu-item dropdown-toggle" onclick="toggleDropdown('account')">
+        <i class="fas fa-user-lock"></i> <span>Account Management</span>
+      </div>
+      <div class="dropdown" id="accountDropdown">
+        <div class="menu-item" onclick="showSection('createAccount')">
+          <i class="fas fa-user-plus"></i> <span>Create Account</span>
+        </div>
+        <div class="menu-item" onclick="showSection('manageAccount')">
+          <i class="fas fa-user-cog"></i> <span>Manage Accounts</span>
+        </div>
+      </div>
+      <div class="menu-item dropdown-toggle" onclick="toggleDropdown('attendance')">
+        <i class="fas fa-calendar-check"></i> <span>Attendance</span>
+      </div>
+      <div class="dropdown" id="attendanceDropdown">
+        <div class="menu-item" onclick="showSection('viewAttendance')">
+          <i class="fas fa-calendar-alt"></i> <span>View Attendance</span>
+        </div>
+        <div class="menu-item" onclick="showSection('searchAttendance')">
+          <i class="fas fa-search"></i> <span>Search Attendance</span>
+        </div>
+      </div>
+      <div class="menu-item" onclick="exportAllData()">
+        <i class="fas fa-file-export"></i> <span>Export All Data</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="content-header">
+      <h2 id="sectionTitle">Dashboard</h2>
+      <button class="btn btn-reset" onclick="resetData()">
+        <i class="fas fa-undo-alt mr-2"></i> Reset Data
+      </button>
+      <button class="btn btn-logout" onclick="logout()">
+        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+      </button>
+    </div>
+
+    <div class="content-body">
+      <!-- DASHBOARD -->
+      <div id="dashboardHome" class="section" style="display:block;">
+        <div class="card">
+          <div class="card-header">
+            <h3>System Overview</h3>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+              <div class="card" style="border-left: 4px solid var(--primary); padding: 1.5rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">Total Users</div>
+                <div style="font-size: 1.5rem; font-weight: 600;"><span id="userCount">0</span></div>
+                <i class="fas fa-users" style="position: absolute; top: 1rem; right: 1rem; color: rgba(0,0,0,0.1); font-size: 2rem;"></i>
+              </div>
+              <div class="card" style="border-left: 4px solid var(--secondary); padding: 1.5rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">Total Assists</div>
+                <div style="font-size: 1.5rem; font-weight: 600;"><span id="assistCount">0</span></div>
+                <i class="fas fa-laptop" style="position: absolute; top: 1rem; right: 1rem; color: rgba(0,0,0,0.1); font-size: 2rem;"></i>
+              </div>
+              <div class="card" style="border-left: 4px solid var(--warning); padding: 1.5rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">Assigned Items</div>
+                <div style="font-size: 1.5rem; font-weight: 600;"><span id="assignedCount">0</span></div>
+                <i class="fas fa-handshake" style="position: absolute; top: 1rem; right: 1rem; color: rgba(0,0,0,0.1); font-size: 2rem;"></i>
+              </div>
+              <div class="card" style="border-left: 4px solid var(--danger); padding: 1.5rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">Today's Attendance</div>
+                <div class="attendance-circle">
+                  <canvas id="attendanceChart" width="100" height="100"></canvas>
+                  <div style="font-size: 0.875rem; margin-top: 0.5rem;"><span id="attendanceStatus">Not Logged In</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE USER SECTION -->
+      <div id="createUser" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Create New User</h3>
+          </div>
+          <div class="card-body">
+            <form id="createUserForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Employee ID</label>
+                  <input type="text" class="form-input" id="employeeId" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-input" id="employeeName" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Department</label>
+                  <input type="text" class="form-input" id="employeeDept" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">HOD Name</label>
+                  <input type="text" class="form-input" id="employeeHod" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save mr-2"></i> Save User
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE USERS SECTION -->
+      <div id="manageUser" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Manage Users</h3>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>HOD</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Users will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD ASSIST SECTION -->
+      <div id="addAssist" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Add New Assist</h3>
+          </div>
+          <div class="card-body">
+            <form id="addAssistForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Assist ID</label>
+                  <input type="text" class="form-input" id="assistId" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Assist Type</label>
+                  <input type="text" class="form-input" id="assistType" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Model</label>
+                  <input type="text" class="form-input" id="assistModel" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Serial Number</label>
+                  <input type="text" class="form-input" id="assistSerial" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save mr-2"></i> Save Assist
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE ASSIST SECTION -->
+      <div id="manageAssist" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Manage Assists</h3>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Model</th>
+                  <th>Serial</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="assistsTableBody">
+                <!-- Assists will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW INVENTORY SECTION -->
+      <div id="viewInventory" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>View Inventory</h3>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Model</th>
+                  <th>Serial</th>
+                  <th>Status</th>
+                  <th>Assigned To</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <!-- Inventory will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSIGN STOCK SECTION -->
+      <div id="assignStock" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Assign Stock</h3>
+          </div>
+          <div class="card-body">
+            <form id="assignStockForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Assist ID</label>
+                  <select class="form-input" id="assignAssistId" required>
+                    <option value="">Select Assist</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Employee ID</label>
+                  <select class="form-input" id="assignEmployeeId" required>
+                    <option value="">Select Employee</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-handshake mr-2"></i> Assign Stock
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH ASSIGN STOCK SECTION -->
+      <div id="searchAssignStock" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Search Assigned Stock</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Search by Assist ID or Employee ID</label>
+              <input type="text" class="form-input" id="searchAssignInput" placeholder="Enter Assist ID or Employee ID">
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Assist ID</th>
+                  <th>Assist Type</th>
+                  <th>Employee ID</th>
+                  <th>Employee Name</th>
+                  <th>Assignment Date</th>
+                </tr>
+              </thead>
+              <tbody id="searchAssignTableBody">
+                <!-- Search results will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE ACCOUNT SECTION -->
+      <div id="createAccount" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Create New Account</h3>
+          </div>
+          <div class="card-body">
+            <form id="createAccountForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Company</label>
+                  <input type="text" class="form-input" id="accountCompany" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Department</label>
+                  <input type="text" class="form-input" id="accountDept" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Role</label>
+                  <select class="form-input" id="accountRole" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Viewer">Viewer</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Username</label>
+                  <input type="text" class="form-input" id="accountUsername" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Password</label>
+                  <input type="password" class="form-input" id="accountPassword" required>
+                </div>
+                <div class="form-group"></div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save mr-2"></i> Save Account
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE ACCOUNTS SECTION -->
+      <div id="manageAccount" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Manage Accounts</h3>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Department</th>
+                  <th>Role</th>
+                  <th>Username</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accountsTableBody">
+                <!-- Accounts will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW ATTENDANCE SECTION -->
+      <div id="viewAttendance" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>View Attendance</h3>
+          </div>
+          <div class="card-body">
+            <div class="calendar-container">
+              <input type="text" id="attendanceCalendar" class="form-input" placeholder="Select Month">
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>In Time</th>
+                  <th>Out Time</th>
+                  <th>Total Hours</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody">
+                <!-- Attendance will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH ATTENDANCE SECTION -->
+      <div id="searchAttendance" class="section" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Search Attendance</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Select Date Range</label>
+              <input type="text" class="form-input" id="attendanceDateRange" placeholder="Select date range">
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>In Time</th>
+                  <th>Out Time</th>
+                  <th>Total Hours</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="searchAttendanceTableBody">
+                <!-- Search results will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Section titles mapping
+const sectionTitles = {
+  'dashboardHome': 'Dashboard',
+  'createUser': 'Create User',
+  'manageUser': 'Manage Users',
+  'addAssist': 'Add Assist',
+  'manageAssist': 'Manage Assists',
+  'viewInventory': 'View Inventory',
+  'assignStock': 'Assign Stock',
+  'searchAssignStock': 'Search Assign Stock',
+  'createAccount': 'Create Account',
+  'manageAccount': 'Manage Accounts',
+  'viewAttendance': 'View Attendance',
+  'searchAttendance': 'Search Attendance'
+};
+
+// Current user role and username
+let currentUserRole = '';
+let currentUsername = '';
+
+// Initialize default data if not exists
+if (!localStorage.getItem('users')) {
+  localStorage.setItem('users', JSON.stringify([
+    { id: '1220', name: 'Navkiran Singh', dept: 'Unknown', hod: 'Unknown', status: 'Active' },
+    { id: '2002', name: 'Chander Shekhar Rawat', dept: 'Unknown', hod: 'Unknown', status: 'Active' }
+  ]));
+}
+
+if (!localStorage.getItem('assists')) {
+  localStorage.setItem('assists', JSON.stringify([
+    { id: 'A001', type: 'Laptop', model: 'Dell XPS 15', serial: 'DXPS12345', status: 'Available' },
+    { id: 'A002', type: 'Desktop', model: 'HP EliteDesk', serial: 'HPD12345', status: 'Available' }
+  ]));
+}
+
+if (!localStorage.getItem('accounts')) {
+  localStorage.setItem('accounts', JSON.stringify([
+    { company: 'Unknown', dept: 'IT', role: 'Admin', username: 'admin', password: '12345' }
+  ]));
+}
+
+if (!localStorage.getItem('assignments')) {
+  localStorage.setItem('assignments', JSON.stringify([]));
+}
+
+if (!localStorage.getItem('attendance')) {
+  localStorage.setItem('attendance', JSON.stringify([]));
+}
+
+// Utility function to format time
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// Utility function to calculate hours between two times
+function calculateHours(inTime, outTime) {
+  const diff = (outTime - inTime) / (1000 * 60 * 60);
+  return diff.toFixed(2);
+}
+
+// Utility function to check attendance status
+function getAttendanceStatus(inTime, outTime) {
+  const officeStart = new Date(inTime);
+  officeStart.setHours(9, 0, 0);
+  const officeEnd = new Date(inTime);
+  officeEnd.setHours(17, 20, 0);
+  let status = '';
+  if (inTime > officeStart) status += 'Late ';
+  if (outTime && outTime > officeEnd) status += 'Overtime';
+  return status.trim() || 'On Time';
+}
+
+// Login function with attendance tracking
+function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+  const user = accounts.find(acc => acc.username === username && acc.password === password);
+  
+  if (user) {
+    currentUserRole = user.role;
+    currentUsername = username;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'flex';
+    
+    // Record attendance
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    const existingRecord = attendance.find(a => a.username === username && a.date === today);
+    
+    if (!existingRecord) {
+      attendance.push({
+        username,
+        date: today,
+        inTime: now,
+        outTime: null,
+        totalHours: 0,
+        status: getAttendanceStatus(now, null)
+      });
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+    }
+    
+    updateCounts();
+    updateAttendanceChart();
+    applyRoleRestrictions();
+    loadUsersTable();
+    loadAssistsTable();
+    loadInventoryTable();
+    loadAssignStockForm();
+    loadAccountsTable();
+  } else {
+    alert("Invalid credentials!");
+  }
+}
+
+// Logout function with attendance tracking
+function logout() {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+  const record = attendance.find(a => a.username === currentUsername && a.date === today);
+  
+  if (record && !record.outTime) {
+    record.outTime = now;
+    record.totalHours = calculateHours(new Date(record.inTime), now);
+    record.status = getAttendanceStatus(new Date(record.inTime), now);
+    localStorage.setItem('attendance', JSON.stringify(attendance));
+  }
+  
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  currentUserRole = '';
+  currentUsername = '';
+}
+
+// Window close event for attendance
+window.addEventListener('beforeunload', () => {
+  if (currentUsername) {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    const record = attendance.find(a => a.username === currentUsername && a.date === today);
+    
+    if (record && !record.outTime) {
+      record.outTime = now;
+      record.totalHours = calculateHours(new Date(record.inTime), now);
+      record.status = getAttendanceStatus(new Date(record.inTime), now);
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+    }
+  }
+});
+
+// Reset data function
+function resetData() {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot reset data.');
+    return;
+  }
+  if (confirm('Are you sure you want to reset all data to default?')) {
+    localStorage.clear();
+    localStorage.setItem('users', JSON.stringify([
+      { id: '1220', name: 'Navkiran Singh', dept: 'Unknown', hod: 'Unknown', status: 'Active' },
+      { id: '2002', name: 'Chander Shekhar Rawat', dept: 'Unknown', hod: 'Unknown', status: 'Active' }
+    ]));
+    localStorage.setItem('assists', JSON.stringify([
+      { id: 'A001', type: 'Laptop', model: 'Dell XPS 15', serial: 'DXPS12345', status: 'Available' },
+      { id: 'A002', type: 'Desktop', model: 'HP EliteDesk', serial: 'HPD12345', status: 'Available' }
+    ]));
+    localStorage.setItem('accounts', JSON.stringify([
+      { company: 'Unknown', dept: 'IT', role: 'Admin', username: 'admin', password: '12345' }
+    ]));
+    localStorage.setItem('assignments', JSON.stringify([]));
+    localStorage.setItem('attendance', JSON.stringify([]));
+    updateCounts();
+    updateAttendanceChart();
+    loadUsersTable();
+    loadAssistsTable();
+    loadInventoryTable();
+    loadAssignStockForm();
+    loadAccountsTable();
+    loadAttendanceTable();
+    loadSearchAttendanceTable();
+    alert('Data has been reset to default values.');
+  }
+}
+
+// Export function with dynamic assist sheets
+function exportAllData() {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot export data.');
+    return;
+  }
+  
+  try {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+    const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+    const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+
+    const wb = XLSX.utils.book_new();
+    
+    // User Details Sheet
+    if (users.length) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(users), "User Details");
+    }
+
+    // Group assists by type
+    const assistTypes = [...new Set(assists.map(a => a.type))];
+    assistTypes.forEach(type => {
+      const filteredAssists = assists.filter(a => a.type === type).map(assist => {
+        const assignment = assignments.find(a => a.assistId === assist.id);
+        return {
+          ...assist,
+          AssignedUserId: assignment ? assignment.employeeId : '',
+          AssignedUserName: assignment ? users.find(u => u.id === assignment.employeeId)?.name || '' : ''
+        };
+      });
+      if (filteredAssists.length) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filteredAssists), type);
+      }
+    });
+
+    // Accounts and Attendance Sheets
+    if (accounts.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(accounts), "Accounts");
+    if (attendance.length) {
+      const formattedAttendance = attendance.map(a => ({
+        Username: a.username,
+        Date: a.date,
+        InTime: a.inTime ? formatTime(new Date(a.inTime)) : '',
+        OutTime: a.outTime ? formatTime(new Date(a.outTime)) : '',
+        TotalHours: a.totalHours,
+        Status: a.status
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formattedAttendance), "Attendance");
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0,10);
+    const filename = `IT_Admin_Export_${dateStr}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  } catch (error) {
+    console.error("Export error:", error);
+    alert("Failed to export data. Error: " + error.message);
+  }
+}
+
+// Show section function
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.getElementById('sectionTitle').textContent = sectionTitles[id] || id;
+  document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+  const menuItem = document.querySelector(`[onclick="showSection('${id}')"]`);
+  if (menuItem) menuItem.classList.add('active');
+  
+  if (id === 'viewAttendance') loadAttendanceTable();
+  if (id === 'searchAttendance') loadSearchAttendanceTable();
+}
+
+// Toggle dropdown function
+function toggleDropdown(type) {
+  const dd = document.getElementById(type + 'Dropdown');
+  const toggle = event.currentTarget;
+  document.querySelectorAll('.dropdown').forEach(d => {
+    if (d.id !== type + 'Dropdown') {
+      d.classList.remove('show');
+      d.previousElementSibling.classList.add('collapsed');
+    }
+  });
+  dd.classList.toggle('show');
+  toggle.classList.toggle('collapsed');
+}
+
+// Update counts function
+function updateCounts() {
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+  const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+  document.getElementById('userCount').textContent = users.length;
+  document.getElementById('assistCount').textContent = assists.length;
+  document.getElementById('assignedCount').textContent = assignments.length;
+}
+
+// Update attendance chart
+let attendanceChart = null;
+function updateAttendanceChart() {
+  const today = new Date().toISOString().slice(0, 10);
+  const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+  const record = attendance.find(a => a.username === currentUsername && a.date === today);
+  
+  let statusText = 'Not Logged In';
+  let hoursWorked = 0;
+  let percentage = 0;
+  
+  if (record) {
+    statusText = record.status || 'On Time';
+    hoursWorked = parseFloat(record.totalHours) || 0;
+    const maxHours = 8.33; // 9:00 AM to 5:20 PM
+    percentage = Math.min((hoursWorked / maxHours) * 100, 100);
+  }
+  
+  document.getElementById('attendanceStatus').textContent = statusText;
+  
+  const ctx = document.getElementById('attendanceChart').getContext('2d');
+  if (attendanceChart) attendanceChart.destroy();
+  
+  attendanceChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [percentage, 100 - percentage],
+        backgroundColor: [percentage >= 100 ? '#059669' : '#2563eb', '#e2e8f0'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { display: false } },
+      tooltips: { enabled: false }
+    }
+  });
+}
+
+// Apply role restrictions
+function applyRoleRestrictions() {
+  const restricted = currentUserRole === 'Viewer';
+  document.querySelectorAll('.btn-primary, .btn-danger, .btn-reset, .btn-export').forEach(btn => {
+    btn.disabled = restricted;
+    btn.style.opacity = restricted ? '0.5' : '1';
+  });
+  document.querySelectorAll('form').forEach(form => {
+    form.querySelectorAll('input, select, button').forEach(input => {
+      input.disabled = restricted;
+    });
+  });
+}
+
+// Load users table
+function loadUsersTable() {
+  if (currentUserRole === 'Viewer' && !document.querySelector('#manageUser .btn-group')) return;
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+  
+  users.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${user.id}</td>
+      <td>${user.name}</td>
+      <td>${user.dept}</td>
+      <td>${user.hod}</td>
+      <td><span class="badge ${user.status === 'Active' ? 'badge-success' : 'badge-danger'}">${user.status}</span></td>
+      <td class="btn-group">
+        <button class="btn btn-sm btn-primary" onclick="editUser('${user.id}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Edit user
+function editUser(id) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot edit users.');
+    return;
+  }
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const user = users.find(u => u.id === id);
+  if (user) {
+    document.getElementById('employeeId').value = user.id;
+    document.getElementById('employeeName').value = user.name;
+    document.getElementById('employeeDept').value = user.dept;
+    document.getElementById('employeeHod').value = user.hod;
+    showSection('createUser');
+    document.getElementById('createUserForm').onsubmit = function(e) {
+      e.preventDefault();
+      user.id = document.getElementById('employeeId').value;
+      user.name = document.getElementById('employeeName').value;
+      user.dept = document.getElementById('employeeDept').value;
+      user.hod = document.getElementById('employeeHod').value;
+      localStorage.setItem('users', JSON.stringify(users));
+      alert('User updated successfully!');
+      this.reset();
+      updateCounts();
+      loadUsersTable();
+      showSection('manageUser');
+      this.onsubmit = createUserFormSubmit;
+    };
+  }
+}
+
+// Delete user
+function deleteUser(id) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot delete users.');
+    return;
+  }
+  if (confirm('Are you sure you want to delete this user?')) {
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    users = users.filter(u => u.id !== id);
+    localStorage.setItem('users', JSON.stringify(users));
+    updateCounts();
+    loadUsersTable();
+    alert('User deleted successfully!');
+  }
+}
+
+// Load assists table
+function loadAssistsTable() {
+  if (currentUserRole === 'Viewer' && !document.querySelector('#manageAssist .btn-group')) return;
+  const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+  const tbody = document.getElementById('assistsTableBody');
+  tbody.innerHTML = '';
+  
+  assists.forEach(assist => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${assist.id}</td>
+      <td>${assist.type}</td>
+      <td>${assist.model}</td>
+      <td>${assist.serial}</td>
+      <td><span class="badge ${assist.status === 'Available' ? 'badge-success' : 'badge-warning'}">${assist.status}</span></td>
+      <td class="btn-group">
+        <button class="btn btn-sm btn-primary" onclick="editAssist('${assist.id}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteAssist('${assist.id}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Edit assist
+function editAssist(id) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot edit assists.');
+    return;
+  }
+  const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+  const assist = assists.find(a => a.id === id);
+  if (assist) {
+    document.getElementById('assistId').value = assist.id;
+    document.getElementById('assistType').value = assist.type;
+    document.getElementById('assistModel').value = assist.model;
+    document.getElementById('assistSerial').value = assist.serial;
+    showSection('addAssist');
+    document.getElementById('addAssistForm').onsubmit = function(e) {
+      e.preventDefault();
+      assist.id = document.getElementById('assistId').value;
+      assist.type = document.getElementById('assistType').value;
+      assist.model = document.getElementById('assistModel').value;
+      assist.serial = document.getElementById('assistSerial').value;
+      localStorage.setItem('assists', JSON.stringify(assists));
+      alert('Assist updated successfully!');
+      this.reset();
+      updateCounts();
+      loadAssistsTable();
+      loadInventoryTable();
+      loadAssignStockForm();
+      showSection('manageAssist');
+      this.onsubmit = addAssistFormSubmit;
+    };
+  }
+}
+
+// Delete assist
+function deleteAssist(id) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot delete assists.');
+    return;
+  }
+  if (confirm('Are you sure you want to delete this assist?')) {
+    let assists = JSON.parse(localStorage.getItem('assists') || '[]');
+    assists = assists.filter(a => a.id !== id);
+    localStorage.setItem('assists', JSON.stringify(assists));
+    updateCounts();
+    loadAssistsTable();
+    loadInventoryTable();
+    loadAssignStockForm();
+    alert('Assist deleted successfully!');
+  }
+}
+
+// Load inventory table
+function loadInventoryTable() {
+  const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+  const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const tbody = document.getElementById('inventoryTableBody');
+  tbody.innerHTML = '';
+  
+  assists.forEach(assist => {
+    const assignment = assignments.find(a => a.assistId === assist.id);
+    const user = assignment ? users.find(u => u.id === assignment.employeeId) : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${assist.id}</td>
+      <td>${assist.type}</td>
+      <td>${assist.model}</td>
+      <td>${assist.serial}</td>
+      <td><span class="badge ${assist.status === 'Available' ? 'badge-success' : 'badge-warning'}">${assist.status}</span></td>
+      <td>${user ? `${user.name} (${user.id})` : 'Unassigned'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Load assign stock form
+function loadAssignStockForm() {
+  const assists = JSON.parse(localStorage.getItem('assists') || '[]').filter(a => a.status === 'Available');
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const assistSelect = document.getElementById('assignAssistId');
+  const userSelect = document.getElementById('assignEmployeeId');
+  
+  assistSelect.innerHTML = '<option value="">Select Assist</option>';
+  userSelect.innerHTML = '<option value="">Select Employee</option>';
+  
+  assists.forEach(assist => {
+    const option = document.createElement('option');
+    option.value = assist.id;
+    option.textContent = `${assist.id} (${assist.type} - ${assist.model})`;
+    assistSelect.appendChild(option);
+  });
+  
+  users.forEach(user => {
+    const option = document.createElement('option');
+    option.value = user.id;
+    option.textContent = `${user.name} (${user.id})`;
+    userSelect.appendChild(option);
+  });
+}
+
+// Load accounts table
+function loadAccountsTable() {
+  if (currentUserRole === 'Viewer' && !document.querySelector('#manageAccount .btn-group')) return;
+  const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+  const tbody = document.getElementById('accountsTableBody');
+  tbody.innerHTML = '';
+  
+  accounts.forEach(account => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${account.company}</td>
+      <td>${account.dept}</td>
+      <td>${account.role}</td>
+      <td>${account.username}</td>
+      <td class="btn-group">
+        <button class="btn btn-sm btn-primary" onclick="editAccount('${account.username}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteAccount('${account.username}')" ${currentUserRole === 'Viewer' ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Edit account
+function editAccount(username) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot edit accounts.');
+    return;
+  }
+  const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+  const account = accounts.find(a => a.username === username);
+  if (account) {
+    document.getElementById('accountCompany').value = account.company;
+    document.getElementById('accountDept').value = account.dept;
+    document.getElementById('accountRole').value = account.role;
+    document.getElementById('accountUsername').value = account.username;
+    document.getElementById('accountPassword').value = account.password;
+    showSection('createAccount');
+    document.getElementById('createAccountForm').onsubmit = function(e) {
+      e.preventDefault();
+      account.company = document.getElementById('accountCompany').value;
+      account.dept = document.getElementById('accountDept').value;
+      account.role = document.getElementById('accountRole').value;
+      account.username = document.getElementById('accountUsername').value;
+      account.password = document.getElementById('accountPassword').value;
+      localStorage.setItem('accounts', JSON.stringify(accounts));
+      alert('Account updated successfully!');
+      this.reset();
+      loadAccountsTable();
+      showSection('manageAccount');
+      this.onsubmit = createAccountFormSubmit;
+    };
+  }
+}
+
+// Delete account
+function deleteAccount(username) {
+  if (currentUserRole === 'Viewer') {
+    alert('Access denied: Viewers cannot delete accounts.');
+    return;
+  }
+  if (confirm('Are you sure you want to delete this account?')) {
+    let accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+    accounts = accounts.filter(a => a.username !== username);
+    localStorage.setItem('accounts', JSON.stringify(accounts));
+    loadAccountsTable();
+    alert('Account deleted successfully!');
+  }
+}
+
+// Load attendance table
+function loadAttendanceTable() {
+  const attendance = JSON.parse(localStorage.getItem('attendance') || '[]').filter(a => a.username === currentUsername);
+  const tbody = document.getElementById('attendanceTableBody');
+  tbody.innerHTML = '';
+  
+  attendance.forEach(record => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${record.date}</td>
+      <td>${record.inTime ? formatTime(new Date(record.inTime)) : ''}</td>
+      <td>${record.outTime ? formatTime(new Date(record.outTime)) : ''}</td>
+      <td>${record.totalHours}</td>
+      <td><span class="badge ${record.status.includes('Overtime') ? 'badge-success' : record.status.includes('Late') ? 'badge-danger' : 'badge-primary'}">${record.status}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Load search attendance table
+function loadSearchAttendanceTable() {
+  const attendance = JSON.parse(localStorage.getItem('attendance') || '[]').filter(a => a.username === currentUsername);
+  const tbody = document.getElementById('searchAttendanceTableBody');
+  tbody.innerHTML = '';
+  
+  const dateRange = document.getElementById('attendanceDateRange').value.split(' to ');
+  const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+  const endDate = dateRange[1] ? new Date(dateRange[1]) : null;
+  
+  const filteredAttendance = attendance.filter(record => {
+    if (!startDate || !endDate) return true;
+    const recordDate = new Date(record.date);
+    return recordDate >= startDate && recordDate <= endDate;
+  });
+  
+  filteredAttendance.forEach(record => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${record.date}</td>
+      <td>${record.inTime ? formatTime(new Date(record.inTime)) : ''}</td>
+      <td>${record.outTime ? formatTime(new Date(record.outTime)) : ''}</td>
+      <td>${record.totalHours}</td>
+      <td><span class="badge ${record.status.includes('Overtime') ? 'badge-success' : record.status.includes('Late') ? 'badge-danger' : 'badge-primary'}">${record.status}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+  // Show login page by default
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  
+  // Set default credentials for testing
+  document.getElementById('username').value = 'admin';
+  document.getElementById('password').value = '12345';
+  
+  // Initialize form submissions
+  const createUserFormSubmit = function(e) {
+    e.preventDefault();
+    if (currentUserRole === 'Viewer') {
+      alert('Access denied: Viewers cannot create users.');
+      return;
+    }
+    const id = document.getElementById('employeeId').value;
+    const name = document.getElementById('employeeName').value;
+    const dept = document.getElementById('employeeDept').value;
+    const hod = document.getElementById('employeeHod').value;
+    
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.find(u => u.id === id)) {
+      alert('Employee ID already exists!');
+      return;
+    }
+    users.push({ id, name, dept, hod, status: 'Active' });
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    alert('User created successfully!');
+    this.reset();
+    updateCounts();
+    loadUsersTable();
+    showSection('manageUser');
+  };
+  document.getElementById('createUserForm').addEventListener('submit', createUserFormSubmit);
+  
+  const addAssistFormSubmit = function(e) {
+    e.preventDefault();
+    if (currentUserRole === 'Viewer') {
+      alert('Access denied: Viewers cannot add assists.');
+      return;
+    }
+    const id = document.getElementById('assistId').value;
+    const type = document.getElementById('assistType').value;
+    const model = document.getElementById('assistModel').value;
+    const serial = document.getElementById('assistSerial').value;
+    
+    const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+    if (assists.find(a => a.id === id)) {
+      alert('Assist ID already exists!');
+      return;
+    }
+    assists.push({ id, type, model, serial, status: 'Available' });
+    localStorage.setItem('assists', JSON.stringify(assists));
+    
+    alert('Assist added successfully!');
+    this.reset();
+    updateCounts();
+    loadAssistsTable();
+    loadInventoryTable();
+    loadAssignStockForm();
+    showSection('manageAssist');
+  };
+  document.getElementById('addAssistForm').addEventListener('submit', addAssistFormSubmit);
+  
+  document.getElementById('assignStockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (currentUserRole === 'Viewer') {
+      alert('Access denied: Viewers cannot assign stock.');
+      return;
+    }
+    const assistId = document.getElementById('assignAssistId').value;
+    const employeeId = document.getElementById('assignEmployeeId').value;
+    
+    const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+    const assist = assists.find(a => a.id === assistId);
+    if (assist) {
+      assist.status = 'Assigned';
+      localStorage.setItem('assists', JSON.stringify(assists));
+    }
+    
+    const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+    assignments.push({
+      assistId,
+      employeeId,
+      date: new Date().toISOString().slice(0, 10)
+    });
+    localStorage.setItem('assignments', JSON.stringify(assignments));
+    
+    alert('Stock assigned successfully!');
+    this.reset();
+    updateCounts();
+    loadInventoryTable();
+    loadAssignStockForm();
+    showSection('searchAssignStock');
+  });
+  
+  document.getElementById('searchAssignInput').addEventListener('input', function() {
+    const search = this.value.toLowerCase();
+    const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+    const assists = JSON.parse(localStorage.getItem('assists') || '[]');
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const tbody = document.getElementById('searchAssignTableBody');
+    tbody.innerHTML = '';
+    
+    const filteredAssignments = assignments.filter(a => 
+      a.assistId.toLowerCase().includes(search) || 
+      a.employeeId.toLowerCase().includes(search)
+    );
+    
+    filteredAssignments.forEach(assignment => {
+      const assist = assists.find(a => a.id === assignment.assistId);
+      const user = users.find(u => u.id === assignment.employeeId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${assignment.assistId}</td>
+        <td>${assist ? assist.type : ''}</td>
+        <td>${assignment.employeeId}</td>
+        <td>${user ? user.name : ''}</td>
+        <td>${assignment.date}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+  
+  const createAccountFormSubmit = function(e) {
+    e.preventDefault();
+    if (currentUserRole === 'Viewer') {
+      alert('Access denied: Viewers cannot create accounts.');
+      return;
+    }
+    const company = document.getElementById('accountCompany').value;
+    const dept = document.getElementById('accountDept').value;
+    const role = document.getElementById('accountRole').value;
+    const username = document.getElementById('accountUsername').value;
+    const password = document.getElementById('accountPassword').value;
+    
+    const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+    if (accounts.find(a => a.username === username)) {
+      alert('Username already exists!');
+      return;
+    }
+    accounts.push({ company, dept, role, username, password });
+    localStorage.setItem('accounts', JSON.stringify(accounts));
+    
+    alert('Account created successfully!');
+    this.reset();
+    loadAccountsTable();
+    showSection('manageAccount');
+  };
+  document.getElementById('createAccountForm').addEventListener('submit', createAccountFormSubmit);
+  
+  // Initialize calendar
+  flatpickr('#attendanceCalendar', {
+    mode: 'single',
+    dateFormat: 'Y-m',
+    onChange: (selectedDates) => {
+      loadAttendanceTable();
+    }
+  });
+  
+  flatpickr('#attendanceDateRange', {
+    mode: 'range',
+    dateFormat: 'Y-m-d',
+    onChange: (selectedDates) => {
+      loadSearchAttendanceTable();
+    }
+  });
+  
+  updateCounts();
+  updateAttendanceChart();
+});
+</script>
+</body>
+</html>
